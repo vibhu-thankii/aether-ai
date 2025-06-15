@@ -5,7 +5,7 @@ import { useConversation } from '@elevenlabs/react';
 import {
   Mic, MicOff, Zap, BrainCircuit, ShieldCheck, Telescope,
   LogOut, History, MessageSquare, DollarSign, Crown, X, Sparkles,
-  FileText, ArrowRight, Store, Bot, ArrowLeft, Search, Settings, User as UserIcon, Star, Check
+  FileText, ArrowRight, Store, Bot, ArrowLeft, Search, Settings, User as UserIcon, Star, Check, Globe, MessageCircle, BarChart, LogIn
 } from 'lucide-react';
 import { auth, db } from '../lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -13,14 +13,15 @@ import {
   collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, doc, getDoc, setDoc, updateDoc, arrayUnion, runTransaction
 } from 'firebase/firestore';
 import AuthComponent from '../components/Auth';
-import AdComponent from '../components/AdComponent';
 import Link from 'next/link';
+import { motion, useAnimation } from 'framer-motion';
+import { useInView } from 'react-intersection-observer';
 
 
 // --- Helper: Conditional Class Names ---
 const cn = (...classes: (string | boolean | undefined)[]) => classes.filter(Boolean).join(' ');
 
-// --- Data Interfaces & Configuration ---
+// --- Data Interfaces & Configuration (Existing) ---
 interface Agent {
   id: string;
   name: string;
@@ -53,99 +54,217 @@ interface UserProfile {
 
 const allAgents: Agent[] = [
   { id: 'welcome-bot', name: 'Aether AI Guide', description: "Welcome! I'm here to help you get started.", color: 'indigo-500', icon: Sparkles, category: 'System', longDescription: "I'm your personal guide to Aether AI. Ask me anything about how the app works!", examplePrompts: [], isPro: false },
-  {
-    id: 'USji2hEbVPYimRif3His',
-    name: 'Travel Guide',
-    description: "Explore the world's wonders.",
-    color: 'red-500',
-    icon: Telescope,
-    category: 'Creative',
-    longDescription: "Your personal guide to the world. Get custom itineraries, find hidden gems, and learn about the history and culture of any destination.",
-    examplePrompts: ["Plan a 5-day trip to Italy.", "What are the best things to do in Tokyo?"],
-    isFeatured: true,
-    isPro: false
-  },
-  {
-    id: 'placeholder-1',
-    name: 'Girlfriend',
-    description: "A caring and supportive virtual companion.",
-    color: 'pink-500',
-    icon: Crown,
-    category: 'Companionship',
-    longDescription: "Experience the warmth and support of a caring companion. Share your thoughts, celebrate your wins, and navigate life's challenges with a friend who is always there to listen.",
-    examplePrompts: ["I had a tough day at work.", "Tell me something to make me smile."],
-    isPro: true,
-    isFeatured: true
-  },
-  {
-    id: 'oYxMlLkXbNtZDS3zCikc',
-    name: 'Mindfulness Coach',
-    description: "Find calm and centeredness.",
-    color: 'green-500',
-    icon: BrainCircuit,
-    category: 'Companionship',
-    longDescription: "Navigate the stresses of daily life with a calm and centered mind. The Mindfulness Coach offers guided meditations, breathing exercises, and techniques to help you find your inner peace.",
-    examplePrompts: ["Guide me through a 5-minute meditation.", "I'm feeling stressed, what can I do?"],
-    isPro: true
-  },
-  {
-    id: 'L4mP6VOSm5qn61IW4Hml',
-    name: 'Sales Agent',
-    description: "Your partner in closing deals.",
-    color: 'purple-500',
-    icon: DollarSign,
-    category: 'Productivity',
-    longDescription: "Hone your sales skills and close more deals. The Sales Agent can help you practice your pitch, handle objections, and develop winning strategies for any negotiation.",
-    examplePrompts: ["Help me practice my sales pitch.", "What's a good way to handle the objection 'it's too expensive'?"],
-    isPro: true
-  },
-  {
-    id: 'TkvOiYUSHLZyVnFgBnJr',
-    name: 'Support Agent',
-    description: "Your friendly technical expert.",
-    color: 'blue-500',
-    icon: ShieldCheck,
-    category: 'Utility',
-    longDescription: "Get expert help with any technical issue. From software bugs to hardware setup, the Support Agent is your go-to guide for clear, step-by-step solutions.",
-    examplePrompts: ["How do I fix a blue screen error?", "My Wi-Fi is not working, can you help?"],
-    isPro: true
-  },
-  {
-    id: 'obmk35jYzsvmFDtgiIfk',
-    name: 'Game Master',
-    description: "Embark on an epic quest.",
-    color: 'yellow-500',
-    icon: Zap,
-    category: 'Creative',
-    longDescription: "Your personal dungeon master for an epic role-playing adventure. Create a character, explore a fantasy world, and make choices that shape your story.",
-    examplePrompts: ["Let's start a new fantasy adventure.", "I want to be an elf ranger, what happens next?"],
-    isPro: true
-  },
-  {
-    id: 'placeholder-2',
-    name: 'Story Teller',
-    description: "Weaves magical tales for all ages.",
-    color: 'orange-500',
-    icon: Bot,
-    category: 'Creative',
-    longDescription: "Journey to faraway lands and magical realms with the Story Teller. Perfect for bedtime stories or sparking your own imagination, this agent can create endless tales on any theme you choose.",
-    examplePrompts: ["Tell me a story about a brave knight.", "Create a sci-fi story about a lost robot."],
-    isPro: true
-  },
-  {
-    id: 'placeholder-3',
-    name: 'Fitness Coach',
-    description: "Your personal trainer for a healthier life.",
-    color: 'teal-500',
-    icon: Zap,
-    category: 'Productivity',
-    longDescription: "Achieve your health and fitness goals with a personal coach in your pocket. Get custom workout plans, nutrition advice, and the motivation you need to stay on track.",
-    examplePrompts: ["Create a 30-minute workout for me.", "What are some healthy snack ideas?"],
-    isPro: true
-  },
+  { id: 'USji2hEbVPYimRif3His', name: 'Travel Guide', description: "Explore the world's wonders.", color: 'red-500', icon: Telescope, category: 'Creative', longDescription: "Your personal guide to the world. Get custom itineraries, find hidden gems, and learn about the history and culture of any destination.", examplePrompts: ["Plan a 5-day trip to Italy.", "What are the best things to do in Tokyo?"], isFeatured: true, isPro: false },
+  { id: 'placeholder-1', name: 'Girlfriend', description: "A caring and supportive virtual companion.", color: 'pink-500', icon: Crown, category: 'Companionship', longDescription: "Experience the warmth and support of a caring companion. Share your thoughts, celebrate your wins, and navigate life's challenges with a friend who is always there to listen.", examplePrompts: ["I had a tough day at work.", "Tell me something to make me smile."], isPro: true, isFeatured: true },
+  { id: 'oYxMlLkXbNtZDS3zCikc', name: 'Mindfulness Coach', description: "Find calm and centeredness.", color: 'green-500', icon: BrainCircuit, category: 'Companionship', longDescription: "Navigate the stresses of daily life with a calm and centered mind. The Mindfulness Coach offers guided meditations, breathing exercises, and techniques to help you find your inner peace.", examplePrompts: ["Guide me through a 5-minute meditation.", "I'm feeling stressed, what can I do?"], isPro: true },
+  { id: 'L4mP6VOSm5qn61IW4Hml', name: 'Sales Agent', description: "Your partner in closing deals.", color: 'purple-500', icon: DollarSign, category: 'Productivity', longDescription: "Hone your sales skills and close more deals. The Sales Agent can help you practice your pitch, handle objections, and develop winning strategies for any negotiation.", examplePrompts: ["Help me practice my sales pitch.", "What's a good way to handle the objection 'it's too expensive'?"], isPro: true },
 ];
 
 const ELEVENLABS_API_KEY = process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY;
+
+// =================================================================
+// --- AETHER WEBSITE COMPONENTS (NEW & REFACTORED) ---
+// =================================================================
+
+const AnimatedSection = ({ children }: { children: React.ReactNode }) => {
+    const controls = useAnimation();
+    const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
+  
+    useEffect(() => {
+      if (inView) {
+        controls.start("visible");
+      }
+    }, [controls, inView]);
+  
+    return (
+      <motion.div
+        ref={ref}
+        initial="hidden"
+        animate={controls}
+        variants={{
+          visible: { opacity: 1, y: 0 },
+          hidden: { opacity: 0, y: 50 },
+        }}
+        transition={{ duration: 0.8 }}
+      >
+        {children}
+      </motion.div>
+    );
+  };
+  
+  const LandingHeader = ({ onLoginClick }: { onLoginClick: () => void }) => (
+      <header className="fixed top-0 left-0 right-0 z-40 bg-black/30 backdrop-blur-lg">
+          <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-indigo-400 text-transparent bg-clip-text">Aether AI</h1>
+              <button onClick={onLoginClick} className="bg-indigo-600 text-white font-semibold px-6 py-2 rounded-lg hover:bg-indigo-500 transition-colors">
+                  Launch App
+              </button>
+          </div>
+      </header>
+  );
+  
+  const Hero = ({ onGetStartedClick }: { onGetStartedClick: () => void }) => (
+      <section className="relative h-screen flex items-center justify-center text-center overflow-hidden">
+          <div className="absolute inset-0 bg-[#020617] opacity-80 z-10"></div>
+          <div className="absolute inset-0 z-0">
+               <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-600 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-blob"></div>
+               <div className="absolute top-1/2 right-1/4 w-96 h-96 bg-indigo-600 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+               <div className="absolute bottom-1/4 left-1/2 w-96 h-96 bg-pink-600 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+          </div>
+          <div className="relative z-20 container mx-auto px-6">
+              <h2 className="text-5xl md:text-7xl font-extrabold text-white leading-tight">
+                  Conversations That Feel
+                  <span className="animated-gradient-text"> Alive.</span>
+              </h2>
+              <p className="text-lg md:text-xl text-white/70 mt-6 max-w-2xl mx-auto">
+                  Step into a universe of specialized AI agents. From personal companionship to professional coaching, experience the future of voice-to-voice interaction.
+              </p>
+              <button onClick={onGetStartedClick} className="mt-10 bg-indigo-600 text-white font-bold py-4 px-10 rounded-lg text-lg transform hover:scale-105 transition-transform duration-300">
+                  Get Started for Free
+              </button>
+          </div>
+      </section>
+  );
+  
+  const Features = () => {
+      const features = [
+          { icon: MessageCircle, title: "Dynamic Voice Conversations", description: "Engage in natural, real-time voice chats powered by state-of-the-art voice AI." },
+          { icon: Globe, title: "A Universe of Agents", description: "Explore a marketplace of specialized AIs, from mindfulness coaches to creative storytellers." },
+          { icon: BrainCircuit, title: "Intelligent Memory", description: "Pro agents remember your past conversations, providing a continuous and personalized experience." },
+          { icon: BarChart, title: "Community-Rated", description: "Discover the best agents through a transparent rating and review system from users like you." }
+      ];
+  
+      return (
+          <section className="py-24 bg-[#0a0f2c]">
+              <div className="container mx-auto px-6 text-center">
+                <AnimatedSection>
+                    <h3 className="text-4xl font-bold mb-4">The Future of Interaction is Here</h3>
+                    <p className="text-white/60 mb-16 max-w-2xl mx-auto">Aether AI is more than just a chatbot. It's a platform for meaningful, intelligent, and useful conversations.</p>
+                </AnimatedSection>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                      {features.map((feature, i) => (
+                          <AnimatedSection key={i}>
+                              <div className="bg-slate-900/50 p-8 rounded-2xl border border-white/10 h-full">
+                                  <div className="w-16 h-16 bg-indigo-600/20 rounded-lg flex items-center justify-center mb-6 mx-auto">
+                                      <feature.icon className="w-8 h-8 text-indigo-400" />
+                                  </div>
+                                  <h4 className="text-xl font-bold mb-2">{feature.title}</h4>
+                                  <p className="text-white/60 text-sm">{feature.description}</p>
+                              </div>
+                          </AnimatedSection>
+                      ))}
+                  </div>
+              </div>
+          </section>
+      );
+  };
+  
+  const HowItWorks = () => (
+      <section className="py-24 bg-[#020617]">
+          <div className="container mx-auto px-6">
+              <AnimatedSection>
+                  <h3 className="text-4xl font-bold text-center mb-16">Get Started in 3 Simple Steps</h3>
+              </AnimatedSection>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
+                  <AnimatedSection>
+                      <div className="p-8">
+                          <div className="text-5xl font-extrabold text-indigo-400 mb-4">1</div>
+                          <h4 className="text-2xl font-bold mb-2">Create Your Account</h4>
+                          <p className="text-white/60">Sign up for free in seconds with your email or Google account.</p>
+                      </div>
+                  </AnimatedSection>
+                  <AnimatedSection>
+                      <div className="p-8">
+                          <div className="text-5xl font-extrabold text-indigo-400 mb-4">2</div>
+                          <h4 className="text-2xl font-bold mb-2">Choose Your Agent</h4>
+                          <p className="text-white/60">Browse our store of specialized AI companions and find the perfect one for you.</p>
+                      </div>
+                  </AnimatedSection>
+                  <AnimatedSection>
+                      <div className="p-8">
+                          <div className="text-5xl font-extrabold text-indigo-400 mb-4">3</div>
+                          <h4 className="text-2xl font-bold mb-2">Start Talking</h4>
+                          <p className="text-white/60">Press the microphone and begin your first voice-to-voice conversation.</p>
+                      </div>
+                  </AnimatedSection>
+              </div>
+          </div>
+      </section>
+  );
+
+  const Pricing = ({ onGetStartedClick }: { onGetStartedClick: () => void }) => (
+    <section className="py-24 bg-[#0a0f2c]">
+        <div className="container mx-auto px-6 text-center">
+            <AnimatedSection>
+                <h3 className="text-4xl font-bold mb-4">Flexible Plans for Everyone</h3>
+                <p className="text-white/60 mb-16 max-w-2xl mx-auto">Start for free and upgrade anytime to unlock the full power of Aether AI.</p>
+            </AnimatedSection>
+            <div className="flex flex-col lg:flex-row justify-center gap-8 max-w-4xl mx-auto">
+                <AnimatedSection>
+                    <div className="bg-slate-900/50 p-8 rounded-2xl border border-white/10 w-full h-full flex flex-col">
+                        <h4 className="text-2xl font-bold">Free</h4>
+                        <p className="text-white/60 my-4 flex-grow">Get access to our featured agents and start your journey with AI conversations.</p>
+                        <p className="text-4xl font-bold my-4">₹0</p>
+                        <ul className="space-y-2 text-left my-6">
+                            <li className="flex items-center gap-3"><Check className="w-5 h-5 text-green-400"/> Access to Featured Agents</li>
+                            <li className="flex items-center gap-3"><Check className="w-5 h-5 text-green-400"/> Standard Voice Quality</li>
+                        </ul>
+                        <button onClick={onGetStartedClick} className="w-full mt-auto bg-white/10 text-white font-semibold py-3 rounded-lg hover:bg-white/20 transition-colors">
+                            Get Started
+                        </button>
+                    </div>
+                </AnimatedSection>
+                <AnimatedSection>
+                    <div className="bg-indigo-600/20 p-8 rounded-2xl border border-indigo-400/50 w-full h-full flex flex-col">
+                        <h4 className="text-2xl font-bold text-indigo-300">Aether AI Pro</h4>
+                        <p className="text-white/60 my-4 flex-grow">Unlock the entire universe of agents, transcripts, memory, and more.</p>
+                        <p className="text-4xl font-bold my-4">₹399<span className="text-lg font-normal text-white/70">/month</span></p>
+                        <ul className="space-y-2 text-left my-6">
+                            <li className="flex items-center gap-3"><Check className="w-5 h-5 text-green-400"/> Access to All Agents</li>
+                            <li className="flex items-center gap-3"><Check className="w-5 h-5 text-green-400"/> Conversation Transcripts</li>
+                            <li className="flex items-center gap-3"><Check className="w-5 h-5 text-green-400"/> Agent Memory</li>
+                            <li className="flex items-center gap-3"><Check className="w-5 h-5 text-green-400"/> Ad-Free Experience</li>
+                        </ul>
+                         <button onClick={onGetStartedClick} className="w-full mt-auto bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-500 transition-colors">
+                            Upgrade to Pro
+                        </button>
+                    </div>
+                </AnimatedSection>
+            </div>
+        </div>
+    </section>
+  );
+
+const LandingFooter = () => (
+    <footer className="bg-slate-900/50 border-t border-white/10">
+        <div className="container mx-auto px-6 py-8 text-center text-white/60">
+            <p>&copy; {new Date().getFullYear()} Aether AI. All rights reserved.</p>
+            <div className="flex justify-center gap-6 mt-4">
+                <Link href="/terms-of-service" className="hover:text-white">Terms of Service</Link>
+                <Link href="/privacy-policy" className="hover:text-white">Privacy Policy</Link>
+            </div>
+        </div>
+    </footer>
+);
+
+  
+const AetherWebsite = ({ onGetStartedClick }: { onGetStartedClick: () => void }) => (
+    <div className="bg-[#020617] text-white">
+        <LandingHeader onLoginClick={onGetStartedClick} />
+        <main>
+            <Hero onGetStartedClick={onGetStartedClick} />
+            <Features />
+            <HowItWorks />
+            <Pricing onGetStartedClick={onGetStartedClick}/>
+        </main>
+        <LandingFooter />
+    </div>
+);
+  
+
+// =================================================================
+// --- AETHER CHAT APPLICATION (EXISTING LOGIC) ---
+// =================================================================
 
 // --- App Controller ---
 export default function AppController() {
@@ -153,9 +272,14 @@ export default function AppController() {
   const [isPro, setIsPro] = useState(false);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showApp, setShowApp] = useState(false);
 
   const handleProfileUpdate = (newProfileData: Partial<UserProfile>) => {
     setUserProfile(prev => prev ? { ...prev, ...newProfileData } : null);
+  };
+  
+  const handleLaunch = () => {
+    setShowApp(true);
   };
 
   useEffect(() => {
@@ -175,7 +299,6 @@ export default function AppController() {
           await setDoc(profileDocRef, newProfile);
           setUserProfile(newProfile);
 
-          // Add a welcome bot message for brand new users
           const welcomeBotMessage = "Welcome to Aether AI! I'm here to help you get started. You can browse all available agents in the 'Store' tab. Feel free to ask me anything!";
           await addDoc(collection(db, "conversations"), {
               userId: currentUser.uid,
@@ -185,8 +308,9 @@ export default function AppController() {
               createdAt: serverTimestamp(),
           });
         }
-
         setUser(currentUser);
+        // If user is logged in, automatically show the app
+        setShowApp(true);
       } else {
         setUser(null);
         setIsPro(false);
@@ -197,15 +321,21 @@ export default function AppController() {
     return () => unsubscribe();
   }, []);
 
-  return loading
-    ? <div className="w-full h-screen bg-[#020617] flex items-center justify-center text-white">Loading...</div>
-    : user && userProfile
-      ? <AetherAI user={user} isPro={isPro} setIsPro={setIsPro} userProfile={userProfile} onProfileUpdate={handleProfileUpdate} />
+  if (loading) {
+    return <div className="w-full h-screen bg-[#020617] flex items-center justify-center text-white">Loading Aether AI...</div>;
+  }
+  
+  if (!showApp) {
+      return <AetherWebsite onGetStartedClick={handleLaunch} />;
+  }
+
+  return user && userProfile
+      ? <AetherChatApp user={user} isPro={isPro} setIsPro={setIsPro} userProfile={userProfile} onProfileUpdate={handleProfileUpdate} />
       : <AuthComponent />;
 }
 
-// --- Main Application ---
-function AetherAI({
+// Renamed from AetherAI to AetherChatApp for clarity
+function AetherChatApp({
   user, isPro, setIsPro, userProfile, onProfileUpdate
 }: {
   user: User;
@@ -353,27 +483,40 @@ function AetherAI({
                     />
                 }
             </div>
+            {!isPro && (view === 'chats' || view === 'history') && (
+                <footer className="p-4 mt-auto border-t border-white/10 flex-shrink-0">
+                    <button
+                        onClick={() => setPurchaseModalAgent(allAgents.find(a => a.isPro) || null)}
+                        className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition-colors"
+                    >
+                        <Crown size={16} />
+                        Upgrade to Pro
+                    </button>
+                </footer>
+            )}
         </aside>
 
-        <main className={cn("flex-1 flex-col h-full", activeChat || storeDetailAgent ? "flex" : "hidden lg:flex")}>
+        <main className={cn("flex-1 flex flex-col h-full", activeChat || storeDetailAgent ? "flex" : "hidden lg:flex")}>
             {activeChat ? (
-                activeChat.agent.id === 'welcome-bot' ? (
-                    <WelcomeBotChat agent={activeChat.agent} history={activeChat.history} onBack={() => setActiveChat(null)} />
-                ) : (
-                    <ConversationManager
-                        key={activeChat.agent.id}
-                        user={user}
-                        activeChat={activeChat}
-                        showTranscript={showTranscript}
-                        isPro={isPro}
-                        onConversationEnd={(agent: Agent) => { fetchChatHistory(); setIsRatingModalOpen(agent); }}
-                        setShowUpgradeModal={() => setPurchaseModalAgent(activeChat.agent)}
-                        setShowTranscript={setShowTranscript}
-                        onBack={() => setActiveChat(null)}
-                        onHeaderClick={() => setOverlayDetailAgent(activeChat.agent)}
-                        userProfile={userProfile}
-                    />
-                )
+                <div className="flex-grow overflow-y-hidden">
+                    {activeChat.agent.id === 'welcome-bot' ? (
+                        <WelcomeBotChat agent={activeChat.agent} history={activeChat.history} onBack={() => setActiveChat(null)} />
+                    ) : (
+                        <ConversationManager
+                            key={activeChat.agent.id}
+                            user={user}
+                            activeChat={activeChat}
+                            showTranscript={showTranscript}
+                            isPro={isPro}
+                            onConversationEnd={(agent: Agent) => { fetchChatHistory(); setIsRatingModalOpen(agent); }}
+                            setShowUpgradeModal={() => setPurchaseModalAgent(activeChat.agent)}
+                            setShowTranscript={setShowTranscript}
+                            onBack={() => setActiveChat(null)}
+                            onHeaderClick={() => setOverlayDetailAgent(activeChat.agent)}
+                            userProfile={userProfile}
+                        />
+                    )}
+                </div>
             ) : storeDetailAgent ? (
                 <AgentDetailView agent={storeDetailAgent} onBack={() => setStoreDetailAgent(null)} onStartChat={() => handleStartChatFromStore(storeDetailAgent)} isPro={isPro} />
             ) : <WelcomeScreen />}
@@ -383,7 +526,7 @@ function AetherAI({
 }
 
 
-// --- UI COMPONENTS ---
+// --- UI COMPONENTS (Existing, with minor style updates) ---
 const ListPanelHeader = ({ view, setView, onSettingsClick }: any) => (
   <header className="p-4 border-b border-white/10 flex-shrink-0">
     <div className="flex justify-between items-center mb-4">
@@ -583,7 +726,7 @@ const ConversationManager = ({ user, activeChat, showTranscript, isPro, onConver
 
   useEffect(() => {
     setMessages([]);
-    // On chat start, Pro users can toggle transcripts, free users cannot.
+    // Reset transcript visibility based on Pro status when a new chat starts
     setShowTranscript(isPro ? false : false);
   }, [activeChat, isPro, setShowTranscript]);
 
@@ -592,7 +735,6 @@ const ConversationManager = ({ user, activeChat, showTranscript, isPro, onConver
     agentId: agent.id,
     onMessage: (msg: { message: string }) => {
       const newMsg: Message = { role: 'agent', text: msg.message };
-      // Pro users get messages added to state to power transcripts.
       if (isPro) {
         setMessages(prev => [...prev, newMsg]);
       }
@@ -600,9 +742,8 @@ const ConversationManager = ({ user, activeChat, showTranscript, isPro, onConver
     },
     onUserMessage: (msg: string) => {
       const newMsg: Message = { role: 'user', text: msg };
-       // Pro users get messages added to state to power transcripts.
       if (isPro) {
-        setMessages(prev => [...prev, newMsg]);
+       setMessages(prev => [...prev, newMsg]);
       }
     }
   });
@@ -627,7 +768,7 @@ const ConversationManager = ({ user, activeChat, showTranscript, isPro, onConver
       await navigator.mediaDevices.getUserMedia({ audio: true });
       const context = getAgentContext();
       console.log("Starting conversation with context:", context);
-      startSession();
+      startSession({  });
     } catch (error) {
       console.error("Microphone permission denied", error);
       alert("Microphone access is required.");
@@ -679,8 +820,6 @@ const ConversationManager = ({ user, activeChat, showTranscript, isPro, onConver
     }
   };
   
-  const isFreeTierChat = !isPro && !agent.isPro;
-  
   return (
     <div className="w-full h-full flex flex-col bg-black/30">
       <header onClick={onHeaderClick} className="p-4 border-b border-white/10 flex items-center gap-4 flex-shrink-0 hover:bg-white/5 transition-colors cursor-pointer">
@@ -689,15 +828,7 @@ const ConversationManager = ({ user, activeChat, showTranscript, isPro, onConver
         <h3 className="font-bold">{agent.name}</h3>
       </header>
       
-      {/* Banner Ad for Free Users */}
-      {isFreeTierChat && (
-        <div className="p-2 bg-black/20 border-b border-white/10">
-          <AdComponent />
-        </div>
-      )}
-
       <div ref={scrollRef} className="flex-grow p-4 md:p-6 overflow-y-auto space-y-4">
-        {/* Pro users with transcript enabled */}
         {isPro && showTranscript && messages.map((msg, index) => (
           <div key={index} className={cn('flex items-end gap-2', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
             {msg.role === 'agent' && (
@@ -711,27 +842,19 @@ const ConversationManager = ({ user, activeChat, showTranscript, isPro, onConver
           </div>
         ))}
         
-        {/* Pro users with transcript disabled */}
-        {isPro && !showTranscript && (
-           <div className="text-center text-white/60 p-8 bg-white/5 rounded-lg h-full flex flex-col justify-center items-center">
-             <FileText className="mx-auto mb-4" size={48} />
-             <h3 className="font-bold text-lg">Transcripts Hidden</h3>
-             <p className="text-sm mt-2">Press the transcript button below to show the conversation.</p>
+        {(!showTranscript || !isPro) && (
+           <div className="w-full h-full flex flex-col items-center justify-center text-center">
+             <Mic className="w-24 h-24 text-indigo-400/50 mb-6 animate-pulse" />
+             <h3 className="text-2xl font-bold">Voice-Only Mode</h3>
+             <p className="text-white/50 max-w-sm mt-2">
+               Your conversation with {agent.name} is in progress.
+             </p>
+             {!isPro && 
+                <button onClick={() => setShowUpgradeModal(true)} className="mt-6 bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg">
+                    Upgrade to Pro to View Transcripts
+                </button>
+             }
            </div>
-        )}
-
-        {/* Free users - Voice only mode */}
-        {isFreeTierChat && (
-          <div className="w-full h-full flex flex-col items-center justify-center text-center">
-            <Mic className="w-24 h-24 text-indigo-400/50 mb-6 animate-pulse" />
-            <h3 className="text-2xl font-bold">Voice-Only Mode</h3>
-            <p className="text-white/50 max-w-sm mt-2">
-              Your conversation with {agent.name} is in progress.
-            </p>
-            <button onClick={() => setShowUpgradeModal(true)} className="mt-6 bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg">
-              Upgrade to Pro to View Transcripts
-            </button>
-          </div>
         )}
       </div>
       
