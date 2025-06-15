@@ -54,11 +54,98 @@ interface UserProfile {
 
 const allAgents: Agent[] = [
   { id: 'welcome-bot', name: 'Aether AI Guide', description: "Welcome! I'm here to help you get started.", color: 'indigo-500', icon: Sparkles, category: 'System', longDescription: "I'm your personal guide to Aether AI. Ask me anything about how the app works!", examplePrompts: [], isPro: false },
-  { id: 'USji2hEbVPYimRif3His', name: 'Travel Guide', description: "Explore the world's wonders.", color: 'red-500', icon: Telescope, category: 'Creative', longDescription: "Your personal guide to the world. Get custom itineraries, find hidden gems, and learn about the history and culture of any destination.", examplePrompts: ["Plan a 5-day trip to Italy.", "What are the best things to do in Tokyo?"], isFeatured: true, isPro: false },
-  { id: 'placeholder-1', name: 'Girlfriend', description: "A caring and supportive virtual companion.", color: 'pink-500', icon: Crown, category: 'Companionship', longDescription: "Experience the warmth and support of a caring companion. Share your thoughts, celebrate your wins, and navigate life's challenges with a friend who is always there to listen.", examplePrompts: ["I had a tough day at work.", "Tell me something to make me smile."], isPro: true, isFeatured: true },
-  { id: 'oYxMlLkXbNtZDS3zCikc', name: 'Mindfulness Coach', description: "Find calm and centeredness.", color: 'green-500', icon: BrainCircuit, category: 'Companionship', longDescription: "Navigate the stresses of daily life with a calm and centered mind. The Mindfulness Coach offers guided meditations, breathing exercises, and techniques to help you find your inner peace.", examplePrompts: ["Guide me through a 5-minute meditation.", "I'm feeling stressed, what can I do?"], isPro: true },
-  { id: 'L4mP6VOSm5qn61IW4Hml', name: 'Sales Agent', description: "Your partner in closing deals.", color: 'purple-500', icon: DollarSign, category: 'Productivity', longDescription: "Hone your sales skills and close more deals. The Sales Agent can help you practice your pitch, handle objections, and develop winning strategies for any negotiation.", examplePrompts: ["Help me practice my sales pitch.", "What's a good way to handle the objection 'it's too expensive'?"], isPro: true },
+  {
+    id: 'USji2hEbVPYimRif3His',
+    name: 'Travel Guide',
+    description: "Explore the world's wonders.",
+    color: 'red-500',
+    icon: Telescope,
+    category: 'Creative',
+    longDescription: "Your personal guide to the world. Get custom itineraries, find hidden gems, and learn about the history and culture of any destination.",
+    examplePrompts: ["Plan a 5-day trip to Italy.", "What are the best things to do in Tokyo?"],
+    isFeatured: true,
+    isPro: false
+  },
+  {
+    id: 'placeholder-1',
+    name: 'Girlfriend',
+    description: "A caring and supportive virtual companion.",
+    color: 'pink-500',
+    icon: Crown,
+    category: 'Companionship',
+    longDescription: "Experience the warmth and support of a caring companion. Share your thoughts, celebrate your wins, and navigate life's challenges with a friend who is always there to listen.",
+    examplePrompts: ["I had a tough day at work.", "Tell me something to make me smile."],
+    isPro: true,
+    isFeatured: true
+  },
+  {
+    id: 'oYxMlLkXbNtZDS3zCikc',
+    name: 'Mindfulness Coach',
+    description: "Find calm and centeredness.",
+    color: 'green-500',
+    icon: BrainCircuit,
+    category: 'Companionship',
+    longDescription: "Navigate the stresses of daily life with a calm and centered mind. The Mindfulness Coach offers guided meditations, breathing exercises, and techniques to help you find your inner peace.",
+    examplePrompts: ["Guide me through a 5-minute meditation.", "I'm feeling stressed, what can I do?"],
+    isPro: true
+  },
+  {
+    id: 'L4mP6VOSm5qn61IW4Hml',
+    name: 'Sales Agent',
+    description: "Your partner in closing deals.",
+    color: 'purple-500',
+    icon: DollarSign,
+    category: 'Productivity',
+    longDescription: "Hone your sales skills and close more deals. The Sales Agent can help you practice your pitch, handle objections, and develop winning strategies for any negotiation.",
+    examplePrompts: ["Help me practice my sales pitch.", "What's a good way to handle the objection 'it's too expensive'?"],
+    isPro: true
+  },
+  {
+    id: 'TkvOiYUSHLZyVnFgBnJr',
+    name: 'Support Agent',
+    description: "Your friendly technical expert.",
+    color: 'blue-500',
+    icon: ShieldCheck,
+    category: 'Utility',
+    longDescription: "Get expert help with any technical issue. From software bugs to hardware setup, the Support Agent is your go-to guide for clear, step-by-step solutions.",
+    examplePrompts: ["How do I fix a blue screen error?", "My Wi-Fi is not working, can you help?"],
+    isPro: true
+  },
+  {
+    id: 'obmk35jYzsvmFDtgiIfk',
+    name: 'Game Master',
+    description: "Embark on an epic quest.",
+    color: 'yellow-500',
+    icon: Zap,
+    category: 'Creative',
+    longDescription: "Your personal dungeon master for an epic role-playing adventure. Create a character, explore a fantasy world, and make choices that shape your story.",
+    examplePrompts: ["Let's start a new fantasy adventure.", "I want to be an elf ranger, what happens next?"],
+    isPro: true
+  },
+  {
+    id: 'placeholder-2',
+    name: 'Story Teller',
+    description: "Weaves magical tales for all ages.",
+    color: 'orange-500',
+    icon: Bot,
+    category: 'Creative',
+    longDescription: "Journey to faraway lands and magical realms with the Story Teller. Perfect for bedtime stories or sparking your own imagination, this agent can create endless tales on any theme you choose.",
+    examplePrompts: ["Tell me a story about a brave knight.", "Create a sci-fi story about a lost robot."],
+    isPro: true
+  },
+  {
+    id: 'placeholder-3',
+    name: 'Fitness Coach',
+    description: "Your personal trainer for a healthier life.",
+    color: 'teal-500',
+    icon: Zap,
+    category: 'Productivity',
+    longDescription: "Achieve your health and fitness goals with a personal coach in your pocket. Get custom workout plans, nutrition advice, and the motivation you need to stay on track.",
+    examplePrompts: ["Create a 30-minute workout for me.", "What are some healthy snack ideas?"],
+    isPro: true
+  },
 ];
+
 
 const ELEVENLABS_API_KEY = process.env.NEXT_PUBLIC_ELEVENLABS_API_KEY;
 
